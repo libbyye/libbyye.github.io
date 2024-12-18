@@ -79,6 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 300);
         return;
       }
+
       activateItem(item);
     });
   });
@@ -223,6 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
         0.01,
         audioContext.currentTime + 0.1
       );
+
       setTimeout(() => oscillator.stop(), 100);
     }
 
@@ -346,6 +348,7 @@ document.addEventListener("DOMContentLoaded", () => {
               console.log("Sketch saved successfully:", data);
             }
           });
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         path = [];
       } catch (err) {
@@ -375,6 +378,7 @@ document.addEventListener("DOMContentLoaded", () => {
         /opacity="[^"]*"/,
         `opacity="${opacity}"`
       );
+
       svgElement.innerHTML = modifiedPathData;
       document.querySelector(".saved-sketches").appendChild(svgElement);
     }
@@ -600,10 +604,18 @@ document.addEventListener("DOMContentLoaded", () => {
       container.addEventListener("mouseleave", () => {
         cursor.style.opacity = "0";
       });
+
       animate();
     }
 
     initializeBouncingHeadshot();
+
+    canvas.addEventListener("mousemove", (e) => {
+      updateCursor(e);
+      if (isSketch) {
+        draw(e);
+      }
+    });
 
     canvas.addEventListener("mouseenter", () => {
       cursor.style.display = "block";
@@ -620,7 +632,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       isSketch = true;
       currentColor = getRandomColor();
-      cursor.style.backgroundColor = currentColor;
+      cursorColor = currentColor;
+      cursor.style.backgroundColor = cursorColor;
 
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
@@ -668,5 +681,6 @@ document.addEventListener("DOMContentLoaded", () => {
     resize();
     loadSketches();
   }
+
   createSketchCanvas();
 });

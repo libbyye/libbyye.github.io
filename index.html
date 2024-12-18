@@ -27,10 +27,19 @@
       #about {
         scroll-margin-top: 80px;
       }
+
       .projects,
       .publications,
       .about {
         margin: 4rem auto;
+      }
+      #canvas-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 2;
       }
       body {
         font-family: "Inter", sans-serif;
@@ -85,6 +94,7 @@
       .nav-links a:focus {
         transform: translateY(-2px);
       }
+
       .contact-item:hover,
       .contact-item:focus {
         color: #666;
@@ -137,7 +147,9 @@
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         cursor: pointer;
+        transition: all 0.5s ease;
         background: white;
+        transform: translateY(0);
       }
       .projects-grid.expanded {
         grid-template-columns: repeat(3, 1fr);
@@ -261,9 +273,11 @@
         height: 100%;
         z-index: 2;
       }
+
       .projects-item-overlay {
         z-index: 3;
       }
+
       .video-container iframe {
         position: absolute;
         top: -27%;
@@ -473,6 +487,7 @@
         transform-origin: center center;
         will-change: transform;
       }
+
       .about-container p {
         position: relative;
         z-index: 2;
@@ -480,6 +495,7 @@
         pointer-events: none;
         background: transparent;
       }
+
       .about-cursor {
         width: 20px;
         height: 20px;
@@ -492,6 +508,7 @@
         opacity: 0;
         transition: opacity 0.3s ease;
       }
+
       .about-container a,
       .contact-social,
       .social-icon,
@@ -500,6 +517,7 @@
         position: relative;
         z-index: 3;
       }
+
       .contact-row {
         position: absolute;
         bottom: 2rem;
@@ -512,6 +530,7 @@
         background: transparent;
         padding: 1rem;
       }
+
       .contact-item {
         text-decoration: none;
         color: #333;
@@ -521,6 +540,7 @@
         border-radius: 8px;
         padding: 8px 16px;
       }
+
       .floating-word {
         display: inline-block;
         position: relative;
@@ -550,6 +570,7 @@
         height: 40px;
         color: #000;
       }
+
       .social-icon::before {
         content: "";
         position: absolute;
@@ -562,6 +583,7 @@
         border-radius: 50%;
         z-index: 1;
       }
+
       .social-icon svg {
         position: relative;
         z-index: 2;
@@ -592,6 +614,7 @@
         text-align: center;
         padding: 2rem;
         margin-top: 0;
+        position: relative;
       }
     </style>
   </head>
