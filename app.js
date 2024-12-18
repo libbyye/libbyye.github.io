@@ -471,19 +471,42 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (distance < minDist) {
               const angle = Math.atan2(dy, dx);
-              const targetX = this.x + Math.cos(angle) * minDist;
-              const targetY = this.y + Math.sin(angle) * minDist;
+              const overlap = minDist - distance;
+              const percent = 0.3;
+              const damping = 0.6;
 
-              const ax = (targetX - other.x) * 0.05;
-              const ay = (targetY - other.y) * 0.05;
+              const moveX = Math.cos(angle) * overlap * percent;
+              const moveY = Math.sin(angle) * overlap * percent;
 
-              this.vx -= ax;
-              this.vy -= ay;
-              other.vx += ax;
-              other.vy += ay;
+              this.x -= moveX;
+              this.y -= moveY;
+              other.x += moveX;
+              other.y += moveY;
 
-              this.rotationSpeed = (Math.random() - 0.5) * 5;
-              other.rotationSpeed = (Math.random() - 0.5) * 5;
+              const nx = dx / distance;
+              const ny = dy / distance;
+
+              const rvx = other.vx - this.vx;
+              const rvy = other.vy - this.vy;
+
+              const normalVelocity = rvx * nx + rvy * ny;
+
+              if (normalVelocity < 0) {
+                const restitution = 0.3;
+                const impulseMagnitude =
+                  -(1 + restitution) * normalVelocity * damping;
+
+                const impulseX = impulseMagnitude * nx;
+                const impulseY = impulseMagnitude * ny;
+
+                this.vx -= impulseX * 0.5;
+                this.vy -= impulseY * 0.5;
+                other.vx += impulseX * 0.5;
+                other.vy += impulseY * 0.5;
+              }
+
+              this.rotationSpeed = (Math.random() - 0.5) * 2;
+              other.rotationSpeed = (Math.random() - 0.5) * 2;
             }
           });
 
