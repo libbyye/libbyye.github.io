@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Artist Portfolio</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js" type="module"></script>
+    <script src="app.js" type="module" defer></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      .saved-sketches {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 1;
+      }
+      #projects,
+      #publications,
+      #about {
+        scroll-margin-top: 80px;
+      }
+      .projects,
+      .publications,
+      .about {
+        margin: 4rem auto;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background-color: #f9f9f9;
+        overflow-x: hidden;
+      }
+      .content-piece {
+        position: relative;
+        transition: transform 0.5s ease, filter 0.5s ease;
+      }
+      .content-piece.broken {
+        transform: translateX(10px) rotate(1deg);
+        filter: brightness(0.95);
+      }
+      .content-piece.broken-left#projects-piece,
+      .content-piece.broken#projects-piece {
+        transform: none;
+        filter: none;
+      }
+      nav {
+        background: white;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        position: fixed;
+        width: 100%;
+        z-index: 1000;
+      }
+      .nav-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .logo {
+        font-size: 1.5rem;
+        font-weight: bold;
+        text-decoration: none;
+        color: #333;
+      }
+      .nav-links {
+        display: flex;
+        gap: 2rem;
+      }
+      .nav-links a {
+        text-decoration: none;
+        color: #333;
+      }
+      .nav-links a:hover,
+      .nav-links a:focus {
+        transform: translateY(-2px);
+      }
+      .contact-item:hover,
+      .contact-item:focus {
+        color: #666;
+      }
+      .hero {
+        cursor: none !important;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+          linear-gradient(45deg, #1a1a1a, #4a4a4a);
+        background-size: cover;
+        background-position: center;
+        color: white;
+        position: relative;
+        z-index: 1;
+      }
+      .hero-content h1 {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        position: relative;
+        z-index: 3;
+        pointer-events: none;
+      }
+      .hero-content h2 {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        position: relative;
+        z-index: 3;
+        pointer-events: none;
+      }
+      .projects {
+        max-width: 1200px;
+        margin: 4rem auto;
+        padding: 0 1rem;
+        position: relative;
+      }
+      .projects-grid {
+        column-count: 3;
+        column-gap: 1.5rem;
+        transition: all 0.5s ease;
+      }
+      .projects-item {
+        break-inside: avoid;
+        margin-bottom: 1.5rem;
+        position: relative;
+        overflow: visible;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        background: white;
+      }
+      .projects-grid.expanded {
+        grid-template-columns: repeat(3, 1fr);
+        grid-auto-rows: min-content;
+      }
+      .projects-grid.expanded .projects-item.active {
+        grid-column: 1;
+        grid-row: span 2;
+        z-index: 2;
+      }
+      .projects-grid.expanded .projects-item:not(.active) {
+        opacity: 0.7;
+        transition: all 0.5s ease;
+      }
+      .item-details {
+        display: none;
+        padding: 1.5rem;
+        background: white;
+        opacity: 0;
+        transition: all 0.5s ease;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        position: absolute;
+        top: 0;
+        width: 100%;
+      }
+      .projects-grid.expanded
+        .projects-item.active:not(.right-column)
+        .item-details {
+        left: calc(100% + 1.5rem);
+        right: auto;
+      }
+      .projects-grid.expanded .projects-item.active.right-column .item-details {
+        right: calc(100% + 1.5rem);
+        left: auto;
+      }
+      .projects-grid.expanded .projects-item.active .item-details {
+        display: block;
+        opacity: 1;
+        z-index: 1;
+        min-height: min-content;
+      }
+      .item-details h3 {
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+      }
+      .item-details p {
+        line-height: 1.6;
+        color: #333;
+      }
+      .projects-grid.expanded .projects-item:not(.active):hover {
+        opacity: 1;
+      }
+      .projects-item img {
+        width: 100%;
+        height: auto;
+        display: block;
+        transition: all 0.3s ease;
+      }
+      .projects-grid.expanded .projects-item.after-active {
+        grid-column: 3;
+      }
+      .projects-item,
+      .item-details {
+        transition: all 0.5s ease;
+      }
+      .projects-item:not(.active):hover img {
+        filter: blur(5px);
+      }
+      .projects-grid.expanded .projects-item:not(.active) {
+        grid-column: auto;
+      }
+      .projects-item {
+        position: relative;
+      }
+      .image-container {
+        position: relative;
+        overflow: hidden;
+      }
+      .projects-item-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+      }
+      .projects-item:hover .projects-item-overlay {
+        opacity: 1;
+      }
+      .projects-item-text {
+        color: white;
+        text-align: center;
+        padding: 1rem;
+        font-size: 1.2rem;
+      }
+      .projects-item-text h3 {
+        margin-bottom: 0.5rem;
+        font-size: 1.5rem;
+      }
+      .projects-item-text p {
+        opacity: 0.9;
+      }
+      .video-container {
+        position: relative;
+        overflow: hidden;
+        padding-bottom: 200%;
+        border-radius: 8px;
+      }
+      .video-interaction-blocker {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 2;
+      }
+      .projects-item-overlay {
+        z-index: 3;
+      }
+      .video-container iframe {
+        position: absolute;
+        top: -27%;
+        left: -27%;
+        width: 140%;
+        height: 140%;
+        border-radius: 8px;
+      }
+      .expanded-view {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(249, 249, 249, 0.97);
+        z-index: 2000;
+        display: none;
+        padding: 2rem;
+        overflow-y: auto;
+      }
+      .expanded-view.active {
+        display: flex;
+      }
+      .expanded-content {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        position: relative;
+      }
+      .expanded-image {
+        width: 100%;
+        height: auto;
+        border-radius: 8px;
+      }
+      .expanded-text {
+        padding: 1rem;
+      }
+      .expanded-text h2 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: #333;
+      }
+      .expanded-text p {
+        margin-bottom: 1.5rem;
+        line-height: 1.8;
+        color: #444;
+      }
+      .related-works {
+        margin-top: 2rem;
+      }
+      .related-works h3 {
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        color: #666;
+      }
+      .related-images {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }
+      .related-images img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+      }
+      .related-images img:hover {
+        transform: scale(1.05);
+      }
+      .close-button {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #333;
+        padding: 0.5rem;
+        z-index: 2001;
+      }
+      .close-button:hover {
+        color: #666;
+      }
+      @media (max-width: 768px) {
+        .expanded-content {
+          grid-template-columns: 1fr;
+        }
+      }
+      .publications {
+        max-width: 1200px;
+        margin: 4rem auto;
+        padding: 0 1rem;
+        position: relative;
+      }
+      .publications h2 {
+        margin-bottom: 2rem;
+        color: #333;
+      }
+      .publications-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+      }
+      .publication-card {
+        display: flex;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+      .publication-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      }
+      .publication-year {
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        padding: 2rem 1rem;
+        background: #333;
+        color: white;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 60px;
+      }
+      .publication-content {
+        padding: 2rem;
+        flex-grow: 1;
+      }
+      .publication-content h3 {
+        margin: 0 0 0.5rem 0;
+        color: #333;
+        font-size: 1.4rem;
+      }
+      .publication-journal {
+        color: #666;
+        font-style: italic;
+        margin-bottom: 1rem;
+      }
+      .publication-description {
+        color: #444;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+      }
+      .publication-links {
+        display: flex;
+        gap: 1rem;
+      }
+      .publication-link {
+        padding: 0.5rem 1rem;
+        border: 1px solid #333;
+        border-radius: 4px;
+        text-decoration: none;
+        color: #333;
+        transition: all 0.3s ease;
+      }
+      .publication-link:hover {
+        background: #333;
+        color: white;
+      }
+      @media (max-width: 768px) {
+        .publication-card {
+          flex-direction: column;
+        }
+        .publication-year {
+          writing-mode: horizontal-tb;
+          padding: 1rem;
+          width: 100%;
+          min-width: auto;
+        }
+        .publication-links {
+          flex-direction: column;
+        }
+      }
+      .about,
+      .contact {
+        max-width: 1200px;
+        margin: 4rem auto;
+        padding: 0 1rem;
+      }
+      .about h2,
+      .contact h2 {
+        margin-bottom: 2rem;
+        color: #333;
+      }
+      .about-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 3rem;
+        position: relative;
+        min-height: 400px;
+        overflow: hidden;
+        cursor: none;
+      }
+      .about-container img {
+        position: absolute;
+        z-index: 1;
+        transition: none;
+        transform-origin: center center;
+        will-change: transform;
+      }
+      .about-container p {
+        position: relative;
+        z-index: 2;
+        margin-left: 220px;
+        pointer-events: none;
+        background: transparent;
+      }
+      .about-cursor {
+        width: 20px;
+        height: 20px;
+        background: orange;
+        border-radius: 50%;
+        position: fixed;
+        pointer-events: none;
+        z-index: 1000;
+        transform: translate(-50%, -50%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      .about-container a,
+      .contact-social,
+      .social-icon,
+      .contact-item {
+        cursor: pointer !important;
+        position: relative;
+        z-index: 3;
+      }
+      .contact-row {
+        position: absolute;
+        bottom: 2rem;
+        left: 0;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        gap: 3rem;
+        z-index: 3;
+        background: transparent;
+        padding: 1rem;
+      }
+      .contact-item {
+        text-decoration: none;
+        color: #333;
+        font-size: 1.1rem;
+        transition: color 0.3s ease;
+        background: white;
+        border-radius: 8px;
+        padding: 8px 16px;
+      }
+      .floating-word {
+        display: inline-block;
+        position: relative;
+        transition: transform 0.2s ease;
+        margin: 0 2px;
+        z-index: 2;
+        padding: 2px;
+      }
+      .contact-item:hover {
+        color: #666;
+      }
+      .contact-separator {
+        width: 1px;
+        height: 24px;
+        background-color: #ddd;
+      }
+      .contact-social {
+        display: flex;
+        gap: 1.5rem;
+      }
+      .social-icon {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        color: #000;
+      }
+      .social-icon::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 40px;
+        height: 40px;
+        background: white;
+        border-radius: 50%;
+        z-index: 1;
+      }
+      .social-icon svg {
+        position: relative;
+        z-index: 2;
+        width: 24px;
+        height: 24px;
+        stroke: #000;
+      }
+      .social-icon:hover {
+        color: #666;
+        transform: translateY(-2px);
+      }
+      @media (max-width: 768px) {
+        .contact-row {
+          flex-direction: column;
+          gap: 2rem;
+        }
+        .contact-separator {
+          width: 100%;
+          height: 1px;
+        }
+        .contact-social {
+          justify-content: center;
+        }
+      }
+      footer {
+        background: #333;
+        color: white;
+        text-align: center;
+        padding: 2rem;
+        margin-top: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <div class="nav-content">
+        <a href="#" class="logo">Libby Ye</a>
+        <div class="nav-links">
+          <a href="#projects">Projects</a>
+          <a href="#publications">Publications</a>
+          <a href="#about">What's Up</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="content-piece broken">
+      <div class="hero">
+        <div class="hero-content">
+          <h1>LIBBY YE</h1>
+          <h2>Creative Technology & Interactive Media Design</h2>
+        </div>
+        <div class="saved-sketches"></div>
+        <div
+          id="canvas-container"
+          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%"
+        ></div>
+      </div>
+    </div>
+
+    <div class="content-piece" id="projects-piece">
+      <section id="projects" class="projects">
+        <h2>Projects</h2>
+        <div class="projects-grid">
+          <div class="projects-item">
+            <div class="image-container">
+              <img
+                src="arts/hypnagogic_hallucinations.jpg"
+                alt="Hypnagogic Hallucinations"
+              />
+              <div class="projects-item-overlay">
+                <div class="projects-item-text">
+                  <h3>Hypnagogic Hallucinations</h3>
+                  <p>Oil on Canvas, 2022</p>
+                </div>
+              </div>
+            </div>
+            <div class="item-details">
+              <h3>Hypnagogic Hallucinations</h3>
+              <p>
+                Influenced by the movie Madagascar, Hypnagogic Hallucinations is
+                an illustration of my dreamscape. The zebra’s emergence from the
+                pistachio cupcake depicts the random connectivity of daily
+                objects when the mind is fluid and hyper-associative, whereas
+                the balloon doubles as an hourglass to portray the fragility of
+                time as the zebra struggles in a life lacquered by schedules and
+                successive goals. Are dreams inherently meaningful or only gain
+                meaning after we analyze them?
+              </p>
+            </div>
+          </div>
+          <div class="projects-item">
+            <div class="image-container">
+              <img
+                src="arts/chessboard_of_extinction.jpg"
+                alt="Chessboard of Extinction"
+              />
+              <div class="projects-item-overlay">
+                <div class="projects-item-text">
+                  <h3>Chessboard of Extinction</h3>
+                  <p>Oil on Canvas, 2021</p>
+                </div>
+              </div>
+            </div>
+            <div class="item-details">
+              <h3>Chessboard of Extinction</h3>
+              <p>
+                Visualizing the conceit likening chess with extinction crises,
+                Chessboard of Extinction stresses how each seemingly innocuous
+                move has ramifications initially indiscernible. The rippling
+                chessboard alludes to the ripple effect, whereas the flamingo
+                with skeletal extensions evokes a surreal tone. The sky’s
+                inverted colour transition thus instils the hope that there is
+                still time to reverse extinction crises with the conjunction of
+                technological developments and vigilant climate change
+                campaigns.
+              </p>
+            </div>
+          </div>
+          <div class="projects-item">
+            <div class="image-container">
+              <img src="arts/panache.jpg" alt="Panache" />
+              <div class="projects-item-overlay">
+                <div class="projects-item-text">
+                  <h3>Panache</h3>
+                  <p>Acrylic on Canvas, 2021</p>
+                </div>
+              </div>
+            </div>
+            <div class="item-details">
+              <h3>Panache</h3>
+              <p>
+                A response to the concept “memento mori,” the clenched fists in
+                Panache allude to the appropriation of death as a source of
+                power rather than fear, whereas the pearl-like skull subverts
+                conventional beliefs that death is morbid. Without death, our
+                lives would cease to be valuable. Approaches to death is a
+                double-edged sword; we can neither be blind to nor blinded by
+                it. This is a reminder of the inevitability of death and to
+                traverse through every second of life with individuality and
+                panache.
+              </p>
+            </div>
+          </div>
+          <div class="projects-item">
+            <div class="image-container">
+              <img
+                src="arts/post_mortem_rewards.jpg"
+                alt="Post-Mortem Rewards"
+              />
+              <div class="projects-item-overlay">
+                <div class="projects-item-text">
+                  <h3>Post-Mortem Rewards</h3>
+                  <p>Oil on Canvas, 2022</p>
+                </div>
+              </div>
+            </div>
+            <div class="item-details">
+              <h3>Post-Mortem Rewards</h3>
+              <p>
+                Appropriating Salvador Dalí’s paranoiac-critical method, I
+                stared at the skeleton and flowers to access subconscious
+                imagery in hypnagogia. The skylight represents us; the figure is
+                eternally isolated by the film of glass, in limbo between
+                earthly pleasures and post-mortem rewards. The cracked skylight
+                illustrates the gradual erosion of memories as the figure
+                forgets, and is in turn forgotten by the mortal world. Yet, the
+                flowers—emblem of hope—can perhaps compensate for the stagnancy
+                in death.
+              </p>
+            </div>
+          </div>
+          <div class="projects-item">
+            <div class="image-container">
+              <img
+                src="arts/fluidity_of_the_human_psyche.jpg"
+                alt="Fluidity of the Human Psyche"
+              />
+              <div class="projects-item-overlay">
+                <div class="projects-item-text">
+                  <h3>Fluidity of the Human Psyche</h3>
+                  <p>Acrylic on Canvas, 2021</p>
+                </div>
+              </div>
+            </div>
+            <div class="item-details">
+              <h3>Fluidity of the Human Psyche</h3>
+              <p>
+                Inspired by Nikos Gyftakis’ Self Portrait I, Fluidity of the
+                Human Psyche satirizes our attempts to categorize and define
+                ourselves. The meandering lines liken to unchangeable
+                thumbprints, whereas the interplay of colours is reminiscent of
+                lights flowing across a river. It is thus a visualization of my
+                questions regarding individual identities: How much of “us” is
+                truly “us”? Are our psyches set in stone or constantly evolving?
+                Thumbprints, rivers, or unable to be rationalized?
+              </p>
+            </div>
+          </div>
+          <div class="projects-item">
+            <div class="image-container">
+              <img src="arts/celsius_232.8.jpg" alt="Celsius 232.8" />
+              <div class="projects-item-overlay">
+                <div class="projects-item-text">
+                  <h3>Celsius 232.8</h3>
+                  <p>
+                    Cardboard, Isopropyl Alcohol, Turpentine, Strontium
+                    Chloride, 2022
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="item-details">
+              <h3>Celsius 232.8</h3>
+              <p>
+                Inspired by Ray Bradbury’s Fahrenheit 451, Celsius 232.8
+                visualizes the rapidity and ease with which cultures can be
+                devastated by metaphorical fires—be they ignorance or
+                oppression. I experimented with different accelerants to produce
+                flames with varying colours and degrees of intensities, using a
+                combination of turpentine and isopropyl alcohol (3:2) to obtain
+                orange flames as a reflection of Fahrenheit 451’s cover. The
+                time-lapse incorporates Bernard Herrmann’s soundtrack to evoke a
+                sense of urgency.
+              </p>
+            </div>
+          </div>
+          <div class="projects-item">
+            <div class="image-container">
+              <img
+                src="arts/a_contemporary_bacchae.jpg"
+                alt="A Contemporary Bacchae"
+              />
+              <div class="projects-item-overlay">
+                <div class="projects-item-text">
+                  <h3>A Contemporary Bacchae</h3>
+                  <p>Oil on Canvas, 2022</p>
+                </div>
+              </div>
+            </div>
+            <div class="item-details">
+              <h3>A Contemporary Bacchae</h3>
+              <p>
+                A reconceptualization of Euripides’ tragedy, A Contemporary
+                Bacchae illustrates maenads intoxicated by Dionysus. The three
+                cocktails—sangria, margarita, dirty martini—allude to
+                malfunctioning traffic lights as the maenads transcend into the
+                realm of ecstasy. It depicts the twin forces of restraint and
+                freedom as the figures are induced by Dionysus to express their
+                human instincts, yet at the same time experience the aftermath
+                of exercising such liberty within a conservative society.
+              </p>
+            </div>
+          </div>
+          <div class="projects-item">
+            <div class="image-container">
+              <img
+                src="arts/metamorphosis_of_narcissus.jpg"
+                alt="Metamorphosis of Narcissus"
+              />
+              <div class="projects-item-overlay">
+                <div class="projects-item-text">
+                  <h3>Metamorphosis of Narcissus</h3>
+                  <p>Oil on Canvas, 2021</p>
+                </div>
+              </div>
+            </div>
+            <div class="item-details">
+              <h3>Metamorphosis of Narcissus</h3>
+              <p>
+                A contemporary visualization of Ovid’s Metamorphoses,
+                Metamorphosis of Narcissus illustrates his literal fall into the
+                body of water to parallel Nemesis’ curse for him to fall in love
+                with his reflection. It employs the double image of cliffs
+                mimicking two upturned faces in anticipation of a kiss to
+                illustrate the cruel unattainability of love. What
+                differentiates between self-love and narcissism? Is it
+                calculated from individual capacities for love or societies’
+                arbitrary definitions?
+              </p>
+            </div>
+          </div>
+          <div class="projects-item">
+            <div class="image-container">
+              <img
+                src="arts/defiance_against_gravity.jpg"
+                alt="Defiance Against Gravity"
+              />
+              <div class="projects-item-overlay">
+                <div class="projects-item-text">
+                  <h3>Defiance Against Gravity</h3>
+                  <p>Cardboard, Glue, Laser Cutter, Mirror, 2021</p>
+                </div>
+              </div>
+            </div>
+            <div class="item-details">
+              <h3>Defiance Against Gravity</h3>
+              <p>
+                Constructed from cardboard pieces laser cut into 2.5-milimetre
+                strips, Defiance Against Gravity is a triptych that subverts
+                Newton’s concept of gravitational force. This structure embodies
+                order amidst chaos; while chaotic upon first sight, the
+                cardboard strips are separated from each other by 84.5 and 91.5
+                millimetres respectively, adhering to patterns only decipherable
+                upon closer inspection. Positioned on top of a mirror, the
+                structure evokes a sense of boundlessness.
+              </p>
+            </div>
+          </div>
+          <div class="projects-item">
+            <div class="image-container">
+              <img
+                src="arts/fragmented_american_dreams.PNG"
+                alt="Fragmented American Dreams"
+              />
+              <div class="projects-item-overlay">
+                <div class="projects-item-text">
+                  <h3>Fragmented American Dreams</h3>
+                  <p>
+                    Candle, Cardboard, Glue, Green Laser Pen, Laser Cutter, 2022
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="item-details">
+              <h3>Fragmented American Dreams</h3>
+              <p>
+                Inspired by F. Scott Fitzgerald’s The Great Gatsby, its physical
+                properties mirror the American Dream—fragile, malleable and
+                susceptible to breakage. As the video progresses, the capsule
+                unfolds, revealing the light as little more than lasers shone
+                upon a piece of glue. Fragmented American Dreams—using Craig
+                Armstrong’s soundtrack—thus satirizes our conviction in the
+                American Dream. While anything is possible, we must not neglect
+                our privileges and the roles they play in securing our
+                successes.
+              </p>
+            </div>
+          </div>
+          <div class="projects-item">
+            <div class="image-container">
+              <div class="video-container">
+                <iframe
+                  src="https://www.youtube.com/embed/kc_Gb2gDMbk?autoplay=1&loop=1&playlist=kc_Gb2gDMbk&mute=1&controls=0&showinfo=0&rel=0"
+                  frameborder="0"
+                  allowfullscreen
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                ></iframe>
+                <div class="video-interaction-blocker"></div>
+              </div>
+              <div class="projects-item-overlay">
+                <div class="projects-item-text">
+                  <h3>Spore Couture</h3>
+                  <p>VStitcher, 2023</p>
+                </div>
+              </div>
+            </div>
+            <div class="item-details">
+              <h3>Spore Couture</h3>
+              <p>
+                This corset is inspired by the mystique and organic intricacy of
+                mushrooms, with an asymmetrical silhouette that transforms the
+                wearer into a surreal living work of art. Spore Couture’s
+                textured fabric mimics the delicate gills and velvety caps of
+                various fungi, while its natural hues evoke the earthy palette
+                of human-nature symbiosis.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="content-piece">
+      <section id="publications" class="publications">
+        <h2>Publications</h2>
+        <div class="publications-grid">
+          <div class="publication-card">
+            <div class="publication-year">2021</div>
+            <img
+              src="papers/standstill_f.jpg"
+              alt="Publication Cover"
+              style="width: 180px; height: auto; object-fit: cover"
+            />
+            <img
+              src="papers/standstill_b.png"
+              alt="Publication Cover"
+              style="width: 190px; height: auto; object-fit: cover"
+            />
+            <div class="publication-content">
+              <h3>止息, Standstill</h3>
+              <p class="publication-journal">
+                天地出版社 (Tiandi Publishing House)
+              </p>
+              <p class="publication-description">
+                Photo-poetry book with 365 photographs visualizing a world
+                hurled into a standstill by the pandemic.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="content-piece">
+      <section id="about" class="about">
+        <h2>What's Up</h2>
+        <div class="about-container">
+          <div
+            style="
+              display: flex;
+              gap: 2rem;
+              align-items: flex-start;
+              margin-bottom: 2rem;
+            "
+          >
+            <img
+              src="arts/me.jpeg"
+              alt="Libby Ye"
+              style="
+                width: 200px;
+                height: 200px;
+                object-fit: cover;
+                border-radius: 100px;
+              "
+            />
+            <p>
+              Libby Ye is .... A picture is worth a thousand words, so ↑ That
+              being said, I'm currently studying at Stanford and ♥
+              creating/enjoying multisensorial experiences (often in the form of
+              food). I also realized belatedly how much my profile photo
+              resembles a basketball, so feel free to click & bounce.
+            </p>
+          </div>
+          <div class="contact-row">
+            <a
+              href="mailto:libbyye@stanford.edu"
+              class="contact-item"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span class="contact-main">libbyye@stanford.edu</span>
+            </a>
+            <div class="contact-separator"></div>
+            <div class="contact-social">
+              <a
+                href="https://www.instagram.com/libbyye/"
+                class="social-icon"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+                </svg>
+              </a>
+              <a
+                href="https://www.linkedin.com/in/libbyye/"
+                class="social-icon"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"
+                  />
+                  <rect x="2" y="9" width="4" height="12" />
+                  <circle cx="4" cy="4" r="2" />
+                </svg>
+              </a>
+              <a
+                href="https://github.com/libbyye"
+                class="social-icon"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
+                  />
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <footer>
+      <p>&copy; 2024 Libby Ye.</p>
+    </footer>
+  </body>
+</html>
