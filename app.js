@@ -35,15 +35,15 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("scroll", updateTilt);
   updateTilt();
 
-  const projectsGrid = document.querySelector(".projects-grid");
-  const projectsItems = document.querySelectorAll(".projects-item");
+  const artsGrid = document.querySelector(".arts-grid");
+  const artsItems = document.querySelectorAll(".arts-item");
 
   document.addEventListener("click", (e) => {
-    if (!e.target.closest(".projects-item")) {
-      const currentActive = document.querySelector(".projects-item.active");
+    if (!e.target.closest(".arts-item")) {
+      const currentActive = document.querySelector(".arts-item.active");
       if (currentActive) {
         currentActive.classList.remove("active", "right-column");
-        projectsGrid.classList.remove("expanded");
+        artsGrid.classList.remove("expanded");
         resetItemPositions();
       }
     }
@@ -51,27 +51,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const getColumn = (element) => {
     const rect = element.getBoundingClientRect();
-    const containerRect = projectsGrid.getBoundingClientRect();
+    const containerRect = artsGrid.getBoundingClientRect();
     const third = containerRect.width / 3;
     const relativeX = rect.left - containerRect.left;
     return Math.floor(relativeX / third);
   };
 
-  projectsItems.forEach((item) => {
+  artsItems.forEach((item) => {
     item.addEventListener("click", (e) => {
       e.stopPropagation();
 
-      const currentActive = document.querySelector(".projects-item.active");
+      const currentActive = document.querySelector(".arts-item.active");
       if (currentActive) {
         if (currentActive === item) {
           item.classList.remove("active", "right-column");
-          projectsGrid.classList.remove("expanded");
+          artsGrid.classList.remove("expanded");
           resetItemPositions();
           return;
         }
 
         currentActive.classList.remove("active", "right-column");
-        projectsGrid.classList.remove("expanded");
+        artsGrid.classList.remove("expanded");
         resetItemPositions();
 
         setTimeout(() => {
@@ -89,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let columnsToMove = clickedColumn === 1 ? [2] : [1];
     const gap = 20;
 
-    const itemsToMove = Array.from(projectsItems).filter((item) => {
+    const itemsToMove = Array.from(artsItems).filter((item) => {
       if (!item.classList.contains("active")) {
         const itemColumn = getColumn(item);
         return columnsToMove.includes(itemColumn);
@@ -144,7 +144,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function activateItem(item) {
-    const items = Array.from(projectsItems);
+    const items = Array.from(artsItems);
     const clickedIndex = items.indexOf(item);
     const originalRow = Math.floor(clickedIndex / 3);
     const originalCol = clickedIndex % 3;
@@ -155,7 +155,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     setTimeout(() => {
       item.classList.add("active");
-      projectsGrid.classList.add("expanded");
+      artsGrid.classList.add("expanded");
 
       const column = getColumn(item);
       if (column === 2) {
@@ -184,7 +184,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function resetItemPositions() {
-    projectsItems.forEach((item) => {
+    artsItems.forEach((item) => {
       item.style.gridRow = "";
       item.style.gridColumn = "";
       item.style.transform = "";
