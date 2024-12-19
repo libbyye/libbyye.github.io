@@ -7,6 +7,27 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase.js" type="module"></script>
     <script src="app.js" type="module" defer></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const navLinks = document.querySelectorAll(".nav-links a");
+
+        navLinks.forEach((link) => {
+          link.addEventListener("click", function (e) {
+            e.preventDefault();
+
+            const targetId = this.getAttribute("href");
+            const targetSection = document.getElementById(targetId);
+
+            if (targetSection) {
+              targetSection.scrollIntoView({
+                behavior: "smooth",
+              });
+              window.history.pushState("", "", window.location.pathname);
+            }
+          });
+        });
+      });
+    </script>
     <style>
       * {
         margin: 0;
@@ -623,9 +644,9 @@
       <div class="nav-content">
         <a href="#" class="logo">Libby Ye</a>
         <div class="nav-links">
-          <a href="#projects">Projects</a>
-          <a href="#publications">Publications</a>
-          <a href="#about">What's Up</a>
+          <a href="projects">Projects</a>
+          <a href="publications">Publications</a>
+          <a href="about">What's Up</a>
         </div>
       </div>
     </nav>
