@@ -664,14 +664,15 @@ document.addEventListener("DOMContentLoaded", () => {
   function createBackgroundCanvas() {
     const bgCanvas = document.createElement("canvas");
     const bgCtx = bgCanvas.getContext("2d");
-    let bgPath = [];
+    let bgPath = []; // stores page-absolute coords {x, y}
     let bgIsDrawing = false;
     let bgCurrentColor = "";
+    let bgSessionDrawings = new Set();
 
-    // Persistent SVG layer to hold saved strokes
+    // Persistent SVG layer — absolute positioned, scrolls with the page
     const bgSvgLayer = document.createElement("div");
     bgSvgLayer.style.cssText = `
-      position: fixed;
+      position: absolute;
       top: 0;
       left: 0;
       width: 100%;
@@ -679,8 +680,10 @@ document.addEventListener("DOMContentLoaded", () => {
       pointer-events: none;
       z-index: 0;
     `;
+    document.body.style.position = "relative";
     document.body.appendChild(bgSvgLayer);
 
+    // Temp drawing canvas — fixed to viewport for capturing mouse input
     bgCanvas.style.cssText = `
       position: fixed;
       top: 0;
@@ -692,7 +695,6 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
     document.body.appendChild(bgCanvas);
 
-    // Custom cursor for background drawing
     function getRandomColor() {
       const h = Math.floor(Math.random() * 360);
       const s = Math.floor(Math.random() * 30) + 60;
@@ -743,91 +745,97 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("resize", bgResize);
     bgResize();
 
+    // Convert viewport mouse coords to page-absolute coords
+    function toPageCoords(clientX, clientY) {
+      return { x: clientX, y: clientY + window.scrollY };
+    }
+
+    // Convert page-absolute coords to current viewport coords (for temp canvas drawing)
+    function toViewportY(pageY) {
+      return pageY - window.scrollY;
+    }
+
     function bgDraw(e) {
       if (!bgIsDrawing) return;
 
-      const x = e.clientX;
-      const y = e.clientY;
-      bgPath.push({ x, y });
+      const page = toPageCoords(e.clientX, e.clientY);
+      bgPath.push(page);
 
-      // Main thick stroke
+      // Draw on temp canvas using viewport coords
+      const vx = e.clientX;
+      const vy = e.clientY;
+
       if (bgPath.length > 1) {
         const prev = bgPath[bgPath.length - 2];
+        const prevVx = prev.x;
+        const prevVy = toViewportY(prev.y);
         bgCtx.beginPath();
         bgCtx.strokeStyle = bgCurrentColor;
-        bgCtx.lineWidth = 12;
+        bgCtx.lineWidth = 6;
         bgCtx.lineCap = "round";
         bgCtx.lineJoin = "round";
         bgCtx.globalAlpha = 0.6;
-        bgCtx.moveTo(prev.x, prev.y);
-        bgCtx.lineTo(x, y);
+        bgCtx.moveTo(prevVx, prevVy);
+        bgCtx.lineTo(vx, vy);
         bgCtx.stroke();
       }
 
-      // Spray scatter — random dots around the cursor for that fuzzy graffiti edge
-      const sprayRadius = 20;
+      const sprayRadius = 12;
       const sprayDensity = 18;
       for (let i = 0; i < sprayDensity; i++) {
         const angle = Math.random() * Math.PI * 2;
         const radius = Math.random() * sprayRadius;
-        const dotX = x + Math.cos(angle) * radius;
-        const dotY = y + Math.sin(angle) * radius;
+        const dotX = vx + Math.cos(angle) * radius;
+        const dotY = vy + Math.sin(angle) * radius;
         const dotSize = Math.random() * 2.5 + 0.5;
-
         bgCtx.beginPath();
         bgCtx.fillStyle = bgCurrentColor;
         bgCtx.globalAlpha = 0.15 + Math.random() * 0.25;
         bgCtx.arc(dotX, dotY, dotSize, 0, Math.PI * 2);
         bgCtx.fill();
       }
-
       bgCtx.globalAlpha = 1.0;
     }
 
-    function bgSaveStroke() {
-      if (bgPath.length < 2) return;
-
-      // Build SVG path and add to persistent layer
-      let svgPathD = `M ${bgPath[0].x} ${bgPath[0].y}`;
-      for (let i = 1; i < bgPath.length; i++) {
-        svgPathD += ` L ${bgPath[i].x} ${bgPath[i].y}`;
-      }
-
+    function createSvgFromStroke(pathPoints, color, docWidth, docHeight) {
       const svgEl = document.createElementNS(
         "http://www.w3.org/2000/svg",
         "svg",
       );
-      svgEl.setAttribute("viewBox", `0 0 ${bgCanvas.width} ${bgCanvas.height}`);
+      svgEl.setAttribute("viewBox", `0 0 ${docWidth} ${docHeight}`);
       svgEl.style.cssText = `
-        position: fixed;
+        position: absolute;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
         pointer-events: none;
       `;
-      svgEl.innerHTML = `<path d="${svgPathD}" stroke="${bgCurrentColor}" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>`;
-      // Add spray scatter as SVG circles
+
+      let svgPathD = `M ${pathPoints[0].x} ${pathPoints[0].y}`;
+      for (let i = 1; i < pathPoints.length; i++) {
+        svgPathD += ` L ${pathPoints[i].x} ${pathPoints[i].y}`;
+      }
+
+      svgEl.innerHTML = `<path d="${svgPathD}" stroke="${color}" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>`;
+
       const sprayGroup = document.createElementNS(
         "http://www.w3.org/2000/svg",
         "g",
       );
-      for (let i = 0; i < bgPath.length; i++) {
-        const pt = bgPath[i];
+      for (let i = 0; i < pathPoints.length; i++) {
+        const pt = pathPoints[i];
         for (let j = 0; j < 6; j++) {
-          const angle = Math.random() * Math.PI * 2;
-          const radius = Math.random() * 20;
-          const cx = pt.x + Math.cos(angle) * radius;
-          const cy = pt.y + Math.sin(angle) * radius;
-          const r = Math.random() * 2.5 + 0.5;
+          const a = Math.random() * Math.PI * 2;
+          const r = Math.random() * 20;
           const circle = document.createElementNS(
             "http://www.w3.org/2000/svg",
             "circle",
           );
-          circle.setAttribute("cx", cx);
-          circle.setAttribute("cy", cy);
-          circle.setAttribute("r", r);
-          circle.setAttribute("fill", bgCurrentColor);
+          circle.setAttribute("cx", pt.x + Math.cos(a) * r);
+          circle.setAttribute("cy", pt.y + Math.sin(a) * r);
+          circle.setAttribute("r", (Math.random() * 2.5 + 0.5).toFixed(1));
+          circle.setAttribute("fill", color);
           circle.setAttribute(
             "opacity",
             (0.15 + Math.random() * 0.25).toFixed(2),
@@ -836,14 +844,118 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
       svgEl.appendChild(sprayGroup);
+      return svgEl;
+    }
+
+    function bgSaveStroke() {
+      if (bgPath.length < 2) return;
+
+      const docWidth = document.documentElement.scrollWidth;
+      const docHeight = document.documentElement.scrollHeight;
+
+      // Add SVG to page
+      const svgEl = createSvgFromStroke(
+        bgPath,
+        bgCurrentColor,
+        docWidth,
+        docHeight,
+      );
       bgSvgLayer.appendChild(svgEl);
 
-      // Clear the temp canvas
+      // Save to Supabase
+      const drawingId = "bg_" + Date.now().toString();
+      bgSessionDrawings.add(drawingId);
+      const strokeData = {
+        points: bgPath,
+        color: bgCurrentColor,
+        docWidth: docWidth,
+        docHeight: docHeight,
+      };
+
+      try {
+        supabase
+          .from("sketches")
+          .insert([{ path: JSON.stringify(strokeData), id: drawingId }])
+          .then(({ error }) => {
+            if (error) console.error("BG sketch save error:", error);
+          });
+      } catch (err) {
+        console.error("Error saving bg sketch:", err);
+      }
+
       bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
       bgPath = [];
     }
 
-    // Listen on document — skip interactive elements
+    // Load saved background sketches from Supabase
+    async function loadBgSketches() {
+      try {
+        const { data, error } = await supabase
+          .from("sketches")
+          .select("*")
+          .order("created_at", { ascending: true });
+
+        if (error) throw error;
+        if (data) {
+          data.forEach((sketch) => {
+            // Background sketches are stored as JSON, hero sketches as SVG strings
+            try {
+              const strokeData = JSON.parse(sketch.path);
+              if (strokeData.points && strokeData.color) {
+                const svgEl = createSvgFromStroke(
+                  strokeData.points,
+                  strokeData.color,
+                  strokeData.docWidth || document.documentElement.scrollWidth,
+                  strokeData.docHeight || document.documentElement.scrollHeight,
+                );
+                if (!bgSessionDrawings.has(sketch.id)) {
+                  svgEl.style.opacity = "0.4";
+                }
+                bgSvgLayer.appendChild(svgEl);
+              }
+            } catch {
+              // Not a bg sketch (hero sketch SVG string) — ignore
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Error loading bg sketches:", err);
+      }
+    }
+
+    loadBgSketches();
+
+    // Listen for realtime inserts
+    const bgChannel = supabase.channel("bg-sketches");
+    bgChannel
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "sketches" },
+        (payload) => {
+          if (payload.new) {
+            try {
+              const strokeData = JSON.parse(payload.new.path);
+              if (strokeData.points && strokeData.color) {
+                const svgEl = createSvgFromStroke(
+                  strokeData.points,
+                  strokeData.color,
+                  strokeData.docWidth || document.documentElement.scrollWidth,
+                  strokeData.docHeight || document.documentElement.scrollHeight,
+                );
+                if (!bgSessionDrawings.has(payload.new.id)) {
+                  svgEl.style.opacity = "0.4";
+                }
+                bgSvgLayer.appendChild(svgEl);
+              }
+            } catch {
+              // Hero sketch, ignore
+            }
+          }
+        },
+      )
+      .subscribe();
+
+    // --- Event listeners ---
     document.addEventListener("mousedown", (e) => {
       if (isOverInteractive(e)) {
         bgCursor.style.display = "none";
@@ -855,7 +967,7 @@ document.addEventListener("DOMContentLoaded", () => {
       bgCursorColor = bgCurrentColor;
       bgCursor.style.backgroundColor = bgCursorColor;
       bgCursor.style.boxShadow = `0 0 8px 2px ${bgCursorColor}`;
-      bgPath = [{ x: e.clientX, y: e.clientY }];
+      bgPath = [toPageCoords(e.clientX, e.clientY)];
     });
 
     document.addEventListener("mousemove", (e) => {
@@ -871,7 +983,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (bgIsDrawing) {
         if (isOverInteractive(e)) {
-          // Stop drawing if we move over interactive element
           bgIsDrawing = false;
           bgSaveStroke();
           return;
