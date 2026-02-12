@@ -403,11 +403,19 @@
         .arts-grid {
           column-count: 1;
         }
+        .arts-grid.expanded {
+          display: block;
+          column-count: 1;
+        }
         .arts-grid.expanded .arts-item.active .item-details {
           position: relative;
-          left: auto;
-          right: auto;
+          left: auto !important;
+          right: auto !important;
           top: auto;
+          margin-top: 0;
+        }
+        .arts-grid.expanded .arts-item:not(.active) {
+          opacity: 0.7;
         }
       }
       @media (min-width: 769px) and (max-width: 1024px) {
