@@ -681,6 +681,7 @@
         min-height: 400px;
         overflow: hidden;
         cursor: none;
+        transition: background-color 0.5s ease;
       }
       .about-container img.bouncing-ball {
         position: absolute;
@@ -749,29 +750,27 @@
       }
 
       .about-container.dark-mode {
-        background: #1a1a1a;
-        transition: background-color 0.5s ease;
+        background: #1a1a1a !important;
       }
       .about-container.dark-mode p,
       .about-container.dark-mode .floating-word {
-        color: white;
-        transition: color 0.5s ease;
+        color: white !important;
       }
       .about-container.dark-mode .contact-item {
-        background: #333;
-        color: white;
+        background: #333 !important;
+        color: white !important;
       }
       .about-container.dark-mode .contact-separator {
-        background-color: #555;
+        background-color: #555 !important;
       }
       .about-container.dark-mode .social-icon {
-        color: white;
+        color: white !important;
       }
       .about-container.dark-mode .social-icon svg {
-        stroke: white;
+        stroke: white !important;
       }
       .about-container.dark-mode .social-icon::before {
-        background: #333;
+        background: #333 !important;
       }
       .contact-item:hover {
         color: #666;

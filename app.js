@@ -542,6 +542,9 @@ document.addEventListener("DOMContentLoaded", () => {
         // Turn container dark on first click
         if (!container.classList.contains("dark-mode")) {
           container.classList.add("dark-mode");
+          container.style.backgroundColor = "#1a1a1a";
+          const aboutP = container.querySelector("p");
+          if (aboutP) aboutP.style.color = "white";
         }
 
         const rect = container.getBoundingClientRect();
