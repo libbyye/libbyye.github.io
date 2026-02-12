@@ -862,10 +862,9 @@ document.addEventListener("DOMContentLoaded", () => {
       );
       bgSvgLayer.appendChild(svgEl);
 
-      // Save to Supabase — id is int8, so use a number
-      // Add 1 to avoid collision with hero sketches that may save at same ms
-      const drawingId = Date.now() + 1;
-      bgSessionDrawings.add(String(drawingId));
+      // Save to Supabase
+      const drawingId = Date.now().toString();
+      bgSessionDrawings.add(drawingId);
       const strokeData = {
         type: "bg",
         points: bgPath,
@@ -914,7 +913,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   strokeData.docWidth || document.documentElement.scrollWidth,
                   strokeData.docHeight || document.documentElement.scrollHeight,
                 );
-                if (!bgSessionDrawings.has(String(sketch.id))) {
+                if (!bgSessionDrawings.has(sketch.id)) {
                   svgEl.style.opacity = "0.4";
                 }
                 bgSvgLayer.appendChild(svgEl);
@@ -952,7 +951,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   strokeData.docWidth || document.documentElement.scrollWidth,
                   strokeData.docHeight || document.documentElement.scrollHeight,
                 );
-                if (!bgSessionDrawings.has(String(payload.new.id))) {
+                if (!bgSessionDrawings.has(payload.new.id)) {
                   svgEl.style.opacity = "0.4";
                 }
                 bgSvgLayer.appendChild(svgEl);
