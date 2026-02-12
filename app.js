@@ -659,4 +659,181 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   createSketchCanvas();
+
+  // ===== FULL-PAGE BACKGROUND DRAWING CANVAS =====
+  function createBackgroundCanvas() {
+    const bgCanvas = document.createElement("canvas");
+    const bgCtx = bgCanvas.getContext("2d");
+    let bgPath = [];
+    let bgIsDrawing = false;
+    let bgCurrentColor = "";
+
+    // Persistent SVG layer to hold saved strokes
+    const bgSvgLayer = document.createElement("div");
+    bgSvgLayer.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    `;
+    document.body.appendChild(bgSvgLayer);
+
+    bgCanvas.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    `;
+    document.body.appendChild(bgCanvas);
+
+    // Custom cursor for background drawing
+    function getRandomColor() {
+      const h = Math.floor(Math.random() * 360);
+      const s = Math.floor(Math.random() * 30) + 60;
+      const l = Math.floor(Math.random() * 20) + 40;
+      return `hsl(${h}, ${s}%, ${l}%)`;
+    }
+
+    let bgCursorColor = getRandomColor();
+    const bgCursor = document.createElement("div");
+    bgCursor.style.cssText = `
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      background: ${bgCursorColor};
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 10000;
+      transform: translate(-50%, -50%);
+      display: none;
+    `;
+    document.body.appendChild(bgCursor);
+
+    function isOverInteractive(e) {
+      const el = e.target;
+      return !!(
+        el.closest("a") ||
+        el.closest("button") ||
+        el.closest("img") ||
+        el.closest("nav") ||
+        el.closest(".arts-item") ||
+        el.closest(".project-card") ||
+        el.closest(".publication-card") ||
+        el.closest(".about-container") ||
+        el.closest(".hero") ||
+        el.closest("iframe") ||
+        el.closest(".contact-item") ||
+        el.closest(".social-icon") ||
+        el.closest(".contact-social")
+      );
+    }
+
+    function bgResize() {
+      bgCanvas.width = window.innerWidth;
+      bgCanvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", bgResize);
+    bgResize();
+
+    function bgDraw(e) {
+      if (!bgIsDrawing) return;
+
+      const x = e.clientX;
+      const y = e.clientY;
+      bgPath.push({ x, y });
+
+      bgCtx.beginPath();
+      bgCtx.strokeStyle = bgCurrentColor;
+      bgCtx.lineWidth = 2;
+      bgCtx.lineCap = "round";
+      bgCtx.globalAlpha = 1.0;
+
+      if (bgPath.length > 1) {
+        bgCtx.moveTo(bgPath[bgPath.length - 2].x, bgPath[bgPath.length - 2].y);
+        bgCtx.lineTo(x, y);
+        bgCtx.stroke();
+      }
+    }
+
+    function bgSaveStroke() {
+      if (bgPath.length < 2) return;
+
+      // Build SVG path and add to persistent layer
+      let svgPathD = `M ${bgPath[0].x} ${bgPath[0].y}`;
+      for (let i = 1; i < bgPath.length; i++) {
+        svgPathD += ` L ${bgPath[i].x} ${bgPath[i].y}`;
+      }
+
+      const svgEl = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "svg",
+      );
+      svgEl.setAttribute("viewBox", `0 0 ${bgCanvas.width} ${bgCanvas.height}`);
+      svgEl.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      `;
+      svgEl.innerHTML = `<path d="${svgPathD}" stroke="${bgCurrentColor}" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+      bgSvgLayer.appendChild(svgEl);
+
+      // Clear the temp canvas
+      bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+      bgPath = [];
+    }
+
+    // Listen on document — skip interactive elements
+    document.addEventListener("mousedown", (e) => {
+      if (isOverInteractive(e)) {
+        bgCursor.style.display = "none";
+        return;
+      }
+
+      bgIsDrawing = true;
+      bgCurrentColor = getRandomColor();
+      bgCursorColor = bgCurrentColor;
+      bgCursor.style.backgroundColor = bgCursorColor;
+      bgPath = [{ x: e.clientX, y: e.clientY }];
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (isOverInteractive(e)) {
+        bgCursor.style.display = "none";
+        document.body.style.cursor = "";
+      } else {
+        bgCursor.style.display = "block";
+        bgCursor.style.left = e.clientX + "px";
+        bgCursor.style.top = e.clientY + "px";
+        document.body.style.cursor = "none";
+      }
+
+      if (bgIsDrawing) {
+        if (isOverInteractive(e)) {
+          // Stop drawing if we move over interactive element
+          bgIsDrawing = false;
+          bgSaveStroke();
+          return;
+        }
+        bgDraw(e);
+      }
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (bgIsDrawing) {
+        bgIsDrawing = false;
+        bgSaveStroke();
+      }
+    });
+  }
+
+  createBackgroundCanvas();
 });
