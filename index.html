@@ -48,36 +48,6 @@
         pointer-events: none;
         z-index: 1;
       }
-      .bg-sketch-layer {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 0;
-        pointer-events: none;
-      }
-      body.bg-drawing-active {
-        cursor: none;
-      }
-      .bg-sketch-canvas {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 0;
-        cursor: none;
-      }
-      .bg-saved-sketches {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        pointer-events: none;
-        z-index: 0;
-      }
       #arts,
       #projects,
       #publications,
@@ -103,10 +73,6 @@
         color: #333;
         background-color: #f9f9f9;
         overflow-x: hidden;
-      }
-      body > *:not(.bg-sketch-layer):not(.bg-saved-sketches) {
-        position: relative;
-        z-index: 1;
       }
       .content-piece {
         position: relative;
@@ -430,6 +396,93 @@
           grid-template-columns: 1fr;
         }
       }
+
+      /* ===== MOBILE FIXES ===== */
+      @media (max-width: 768px) {
+        /* Nav: prevent cramping */
+        nav {
+          padding: 0.75rem 0.5rem;
+        }
+        .nav-content {
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+        .logo {
+          font-size: 1.2rem;
+        }
+        .nav-links {
+          gap: 1rem;
+        }
+        .nav-links a {
+          font-size: 0.85rem;
+        }
+
+        /* Hero: prevent right-side cutoff */
+        .content-piece {
+          overflow: hidden;
+        }
+        .hero {
+          overflow: hidden;
+          width: 100%;
+        }
+        #canvas-container {
+          overflow: hidden;
+        }
+        .hero-content h1 {
+          font-size: 1.8rem;
+        }
+        .hero-content h2 {
+          font-size: 0.85rem;
+        }
+
+        /* Arts grid: single column on mobile */
+        .arts-grid {
+          column-count: 1 !important;
+        }
+        .arts-grid.expanded {
+          column-count: 1 !important;
+        }
+        /* On mobile, show details below the image instead of floating to the side */
+        .arts-grid.expanded .arts-item.active .item-details {
+          position: relative !important;
+          left: auto !important;
+          right: auto !important;
+          top: auto !important;
+          width: 100% !important;
+        }
+        .arts-grid.expanded .arts-item:not(.active) {
+          opacity: 0.7;
+        }
+
+        /* Publication images: full width on mobile */
+        .publication-card img {
+          width: 100% !important;
+          height: auto !important;
+          max-height: 300px;
+          object-fit: cover;
+        }
+
+        /* About section: stack photo and text vertically */
+        .about-container > div:first-child {
+          flex-direction: column !important;
+          align-items: center !important;
+          text-align: center;
+        }
+        .about-container > div:first-child img {
+          flex-shrink: 0;
+          margin-bottom: 1rem;
+        }
+        .about-container > div:first-child p {
+          margin-left: 0 !important;
+        }
+      }
+      @media (min-width: 769px) and (max-width: 1024px) {
+        .arts-grid {
+          column-count: 2;
+        }
+      }
+      /* ===== END MOBILE FIXES ===== */
+
       .projects {
         max-width: 1200px;
         margin: 4rem auto;
@@ -628,8 +681,9 @@
         min-height: 400px;
         overflow: hidden;
         cursor: none;
+        transition: background-color 0.5s ease;
       }
-      .about-container img {
+      .about-container img.bouncing-ball {
         position: absolute;
         z-index: 1;
         transition: none;
@@ -640,7 +694,6 @@
       .about-container p {
         position: relative;
         z-index: 2;
-        margin-left: 220px;
         pointer-events: none;
         background: transparent;
       }
@@ -691,12 +744,33 @@
       }
 
       .floating-word {
-        display: inline-block;
+        display: inline;
         position: relative;
-        transition: transform 0.2s ease;
-        margin: 0 2px;
         z-index: 2;
-        padding: 2px;
+      }
+
+      .about-container.dark-mode {
+        background: #1a1a1a !important;
+      }
+      .about-container.dark-mode p,
+      .about-container.dark-mode .floating-word {
+        color: white !important;
+      }
+      .about-container.dark-mode .contact-item {
+        background: #333 !important;
+        color: white !important;
+      }
+      .about-container.dark-mode .contact-separator {
+        background-color: #555 !important;
+      }
+      .about-container.dark-mode .social-icon {
+        color: white !important;
+      }
+      .about-container.dark-mode .social-icon svg {
+        stroke: white !important;
+      }
+      .about-container.dark-mode .social-icon::before {
+        background: #333 !important;
       }
       .contact-item:hover {
         color: #666;
@@ -756,6 +830,11 @@
         .contact-social {
           justify-content: center;
         }
+        .about-container > div:first-child {
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+        }
       }
       footer {
         background: #333;
@@ -768,8 +847,6 @@
     </style>
   </head>
   <body>
-    <div class="bg-sketch-layer"></div>
-    <div class="bg-saved-sketches"></div>
     <nav>
       <div class="nav-content">
         <a href="#" class="logo">Libby Ye</a>
@@ -1277,12 +1354,12 @@
               experiences (often in the form of food). She is fascinated with
               augmenting/disrupting our senses in her art and research. P.S. I
               realized belatedly how much my profile photo resembles a
-              basketball, so feel free to click & bounce..
+              basketball, so feel free to click & bounce....
             </p>
           </div>
           <div class="contact-row">
             <a
-              href="/cdn-cgi/l/email-protection#4824212a2a31312d083b3c29262e273a2c662d2c3d"
+              href="/cdn-cgi/l/email-protection#6a0603080813130f2a191e0b040c05180e440f0e1f"
               class="contact-item"
               target="_blank"
               rel="noopener noreferrer"
@@ -1290,7 +1367,7 @@
               <span class="contact-main"
                 ><span
                   class="__cf_email__"
-                  data-cfemail="523e3b30302b2b37122126333c343d20367c373627"
+                  data-cfemail="0d61646f6f7474684d7e796c636b627f6923686978"
                   >[email&#160;protected]</span
                 ></span
               >
