@@ -704,14 +704,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const bgCursor = document.createElement("div");
     bgCursor.style.cssText = `
       position: fixed;
-      width: 10px;
-      height: 10px;
+      width: 20px;
+      height: 20px;
       background: ${bgCursorColor};
       border-radius: 50%;
       pointer-events: none;
       z-index: 10000;
       transform: translate(-50%, -50%);
       display: none;
+      opacity: 0.7;
+      box-shadow: 0 0 8px 2px ${bgCursorColor};
     `;
     document.body.appendChild(bgCursor);
 
@@ -748,17 +750,38 @@ document.addEventListener("DOMContentLoaded", () => {
       const y = e.clientY;
       bgPath.push({ x, y });
 
-      bgCtx.beginPath();
-      bgCtx.strokeStyle = bgCurrentColor;
-      bgCtx.lineWidth = 2;
-      bgCtx.lineCap = "round";
-      bgCtx.globalAlpha = 1.0;
-
+      // Main thick stroke
       if (bgPath.length > 1) {
-        bgCtx.moveTo(bgPath[bgPath.length - 2].x, bgPath[bgPath.length - 2].y);
+        const prev = bgPath[bgPath.length - 2];
+        bgCtx.beginPath();
+        bgCtx.strokeStyle = bgCurrentColor;
+        bgCtx.lineWidth = 12;
+        bgCtx.lineCap = "round";
+        bgCtx.lineJoin = "round";
+        bgCtx.globalAlpha = 0.6;
+        bgCtx.moveTo(prev.x, prev.y);
         bgCtx.lineTo(x, y);
         bgCtx.stroke();
       }
+
+      // Spray scatter — random dots around the cursor for that fuzzy graffiti edge
+      const sprayRadius = 20;
+      const sprayDensity = 18;
+      for (let i = 0; i < sprayDensity; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const radius = Math.random() * sprayRadius;
+        const dotX = x + Math.cos(angle) * radius;
+        const dotY = y + Math.sin(angle) * radius;
+        const dotSize = Math.random() * 2.5 + 0.5;
+
+        bgCtx.beginPath();
+        bgCtx.fillStyle = bgCurrentColor;
+        bgCtx.globalAlpha = 0.15 + Math.random() * 0.25;
+        bgCtx.arc(dotX, dotY, dotSize, 0, Math.PI * 2);
+        bgCtx.fill();
+      }
+
+      bgCtx.globalAlpha = 1.0;
     }
 
     function bgSaveStroke() {
@@ -783,7 +806,36 @@ document.addEventListener("DOMContentLoaded", () => {
         height: 100%;
         pointer-events: none;
       `;
-      svgEl.innerHTML = `<path d="${svgPathD}" stroke="${bgCurrentColor}" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+      svgEl.innerHTML = `<path d="${svgPathD}" stroke="${bgCurrentColor}" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>`;
+      // Add spray scatter as SVG circles
+      const sprayGroup = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "g",
+      );
+      for (let i = 0; i < bgPath.length; i++) {
+        const pt = bgPath[i];
+        for (let j = 0; j < 6; j++) {
+          const angle = Math.random() * Math.PI * 2;
+          const radius = Math.random() * 20;
+          const cx = pt.x + Math.cos(angle) * radius;
+          const cy = pt.y + Math.sin(angle) * radius;
+          const r = Math.random() * 2.5 + 0.5;
+          const circle = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "circle",
+          );
+          circle.setAttribute("cx", cx);
+          circle.setAttribute("cy", cy);
+          circle.setAttribute("r", r);
+          circle.setAttribute("fill", bgCurrentColor);
+          circle.setAttribute(
+            "opacity",
+            (0.15 + Math.random() * 0.25).toFixed(2),
+          );
+          sprayGroup.appendChild(circle);
+        }
+      }
+      svgEl.appendChild(sprayGroup);
       bgSvgLayer.appendChild(svgEl);
 
       // Clear the temp canvas
@@ -802,6 +854,7 @@ document.addEventListener("DOMContentLoaded", () => {
       bgCurrentColor = getRandomColor();
       bgCursorColor = bgCurrentColor;
       bgCursor.style.backgroundColor = bgCursorColor;
+      bgCursor.style.boxShadow = `0 0 8px 2px ${bgCursorColor}`;
       bgPath = [{ x: e.clientX, y: e.clientY }];
     });
 
