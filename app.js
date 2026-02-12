@@ -714,7 +714,7 @@ document.addEventListener("DOMContentLoaded", () => {
       z-index: 10000;
       transform: translate(-50%, -50%);
       display: none;
-      opacity: 0.7;
+      opacity: 0.8;
       box-shadow: 0 0 8px 2px ${bgCursorColor};
     `;
     document.body.appendChild(bgCursor);
@@ -771,16 +771,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const prevVy = toViewportY(prev.y);
         bgCtx.beginPath();
         bgCtx.strokeStyle = bgCurrentColor;
-        bgCtx.lineWidth = 12;
+        bgCtx.lineWidth = 8;
         bgCtx.lineCap = "round";
         bgCtx.lineJoin = "round";
-        bgCtx.globalAlpha = 0.6;
+        bgCtx.globalAlpha = 0.7;
         bgCtx.moveTo(prevVx, prevVy);
         bgCtx.lineTo(vx, vy);
         bgCtx.stroke();
       }
 
-      const sprayRadius = 20;
+      const sprayRadius = 15;
       const sprayDensity = 18;
       for (let i = 0; i < sprayDensity; i++) {
         const angle = Math.random() * Math.PI * 2;
@@ -817,7 +817,7 @@ document.addEventListener("DOMContentLoaded", () => {
         svgPathD += ` L ${pathPoints[i].x} ${pathPoints[i].y}`;
       }
 
-      svgEl.innerHTML = `<path d="${svgPathD}" stroke="${color}" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>`;
+      svgEl.innerHTML = `<path d="${svgPathD}" stroke="${color}" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>`;
 
       const sprayGroup = document.createElementNS(
         "http://www.w3.org/2000/svg",
@@ -827,7 +827,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const pt = pathPoints[i];
         for (let j = 0; j < 6; j++) {
           const a = Math.random() * Math.PI * 2;
-          const r = Math.random() * 20;
+          const r = Math.random() * 15;
           const circle = document.createElementNS(
             "http://www.w3.org/2000/svg",
             "circle",
