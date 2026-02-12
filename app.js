@@ -771,7 +771,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const prevVy = toViewportY(prev.y);
         bgCtx.beginPath();
         bgCtx.strokeStyle = bgCurrentColor;
-        bgCtx.lineWidth = 6;
+        bgCtx.lineWidth = 12;
         bgCtx.lineCap = "round";
         bgCtx.lineJoin = "round";
         bgCtx.globalAlpha = 0.6;
@@ -780,7 +780,7 @@ document.addEventListener("DOMContentLoaded", () => {
         bgCtx.stroke();
       }
 
-      const sprayRadius = 12;
+      const sprayRadius = 20;
       const sprayDensity = 18;
       for (let i = 0; i < sprayDensity; i++) {
         const angle = Math.random() * Math.PI * 2;
@@ -817,7 +817,7 @@ document.addEventListener("DOMContentLoaded", () => {
         svgPathD += ` L ${pathPoints[i].x} ${pathPoints[i].y}`;
       }
 
-      svgEl.innerHTML = `<path d="${svgPathD}" stroke="${color}" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>`;
+      svgEl.innerHTML = `<path d="${svgPathD}" stroke="${color}" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>`;
 
       const sprayGroup = document.createElementNS(
         "http://www.w3.org/2000/svg",
@@ -863,9 +863,10 @@ document.addEventListener("DOMContentLoaded", () => {
       bgSvgLayer.appendChild(svgEl);
 
       // Save to Supabase
-      const drawingId = "bg_" + Date.now().toString();
+      const drawingId = Date.now().toString();
       bgSessionDrawings.add(drawingId);
       const strokeData = {
+        type: "bg",
         points: bgPath,
         color: bgCurrentColor,
         docWidth: docWidth,
@@ -876,8 +877,9 @@ document.addEventListener("DOMContentLoaded", () => {
         supabase
           .from("sketches")
           .insert([{ path: JSON.stringify(strokeData), id: drawingId }])
-          .then(({ error }) => {
+          .then(({ data, error }) => {
             if (error) console.error("BG sketch save error:", error);
+            else console.log("BG sketch saved:", drawingId);
           });
       } catch (err) {
         console.error("Error saving bg sketch:", err);
@@ -898,10 +900,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (error) throw error;
         if (data) {
           data.forEach((sketch) => {
-            // Background sketches are stored as JSON, hero sketches as SVG strings
             try {
               const strokeData = JSON.parse(sketch.path);
-              if (strokeData.points && strokeData.color) {
+              if (
+                strokeData.type === "bg" &&
+                strokeData.points &&
+                strokeData.color
+              ) {
                 const svgEl = createSvgFromStroke(
                   strokeData.points,
                   strokeData.color,
@@ -914,7 +919,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 bgSvgLayer.appendChild(svgEl);
               }
             } catch {
-              // Not a bg sketch (hero sketch SVG string) — ignore
+              // Not a bg sketch — ignore
             }
           });
         }
@@ -935,7 +940,11 @@ document.addEventListener("DOMContentLoaded", () => {
           if (payload.new) {
             try {
               const strokeData = JSON.parse(payload.new.path);
-              if (strokeData.points && strokeData.color) {
+              if (
+                strokeData.type === "bg" &&
+                strokeData.points &&
+                strokeData.color
+              ) {
                 const svgEl = createSvgFromStroke(
                   strokeData.points,
                   strokeData.color,
