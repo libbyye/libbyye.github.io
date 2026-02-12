@@ -116,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
       })
       .sort(
-        (a, b) => originalPositions.get(a).top - originalPositions.get(b).top
+        (a, b) => originalPositions.get(a).top - originalPositions.get(b).top,
       )[0];
 
     let additionalShift = 0;
@@ -200,8 +200,9 @@ document.addEventListener("DOMContentLoaded", () => {
     let isSketch = false;
     let currentColor = "";
 
-    const audioContext = new (window.AudioContext ||
-      window.webkitAudioContext)();
+    const audioContext = new (
+      window.AudioContext || window.webkitAudioContext
+    )();
     let lastSoundTime = 0;
     const SOUND_THROTTLE = 50;
 
@@ -222,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
       oscillator.start();
       gainNode.gain.exponentialRampToValueAtTime(
         0.01,
-        audioContext.currentTime + 0.1
+        audioContext.currentTime + 0.1,
       );
 
       setTimeout(() => oscillator.stop(), 100);
@@ -282,7 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
         x,
         y,
         canvas.width,
-        canvas.height
+        canvas.height,
       );
       playDrawSound(frequency);
 
@@ -314,7 +315,7 @@ document.addEventListener("DOMContentLoaded", () => {
           schema: "public",
           table: "sketches",
         },
-        handleNewSketch
+        handleNewSketch,
       )
       .subscribe();
 
@@ -359,11 +360,11 @@ document.addEventListener("DOMContentLoaded", () => {
     function addSketchToCanvas(pathData) {
       const svgElement = document.createElementNS(
         "http://www.w3.org/2000/svg",
-        "svg"
+        "svg",
       );
       svgElement.setAttribute(
         "viewBox",
-        `0 0 ${canvas.width} ${canvas.height}`
+        `0 0 ${canvas.width} ${canvas.height}`,
       );
       svgElement.style.width = "100%";
       svgElement.style.height = "100%";
@@ -376,7 +377,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const opacity = currentSessionDrawings.has(drawingId) ? "1.0" : "0.4";
       const modifiedPathData = pathData.replace(
         /opacity="[^"]*"/,
-        `opacity="${opacity}"`
+        `opacity="${opacity}"`,
       );
 
       svgElement.innerHTML = modifiedPathData;
@@ -407,6 +408,7 @@ document.addEventListener("DOMContentLoaded", () => {
       class Ball {
         constructor(x, y) {
           this.element = originalHeadshot.cloneNode(true);
+          this.element.classList.add("bouncing-ball");
           this.element.style.position = "absolute";
           this.element.style.transform = `rotate(${Math.random() * 360}deg)`;
           container.appendChild(this.element);
@@ -600,7 +602,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const newBall = new Ball(
           clickX - originalHeadshot.width / 2,
-          clickY - originalHeadshot.height / 2
+          clickY - originalHeadshot.height / 2,
         );
         balls.push(newBall);
       });
