@@ -743,12 +743,35 @@
       }
 
       .floating-word {
-        display: inline-block;
+        display: inline;
         position: relative;
-        transition: transform 0.2s ease;
-        margin: 0 2px;
         z-index: 2;
-        padding: 2px;
+      }
+
+      .about-container.dark-mode {
+        background: #1a1a1a;
+        transition: background-color 0.5s ease;
+      }
+      .about-container.dark-mode p,
+      .about-container.dark-mode .floating-word {
+        color: white;
+        transition: color 0.5s ease;
+      }
+      .about-container.dark-mode .contact-item {
+        background: #333;
+        color: white;
+      }
+      .about-container.dark-mode .contact-separator {
+        background-color: #555;
+      }
+      .about-container.dark-mode .social-icon {
+        color: white;
+      }
+      .about-container.dark-mode .social-icon svg {
+        stroke: white;
+      }
+      .about-container.dark-mode .social-icon::before {
+        background: #333;
       }
       .contact-item:hover {
         color: #666;

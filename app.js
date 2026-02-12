@@ -515,63 +515,6 @@ document.addEventListener("DOMContentLoaded", () => {
           this.element.style.left = `${this.x}px`;
           this.element.style.top = `${this.y}px`;
           this.element.style.transform = `rotate(${this.rotation}deg)`;
-
-          const ballRect = this.element.getBoundingClientRect();
-          wordElements.forEach((word) => {
-            checkWordCollision(word, ballRect);
-          });
-        }
-      }
-
-      function checkWordCollision(wordEl, ballRect) {
-        const wordRect = wordEl.getBoundingClientRect();
-        const containerRect = container.getBoundingClientRect();
-
-        const relativeWord = {
-          left: wordRect.left - containerRect.left,
-          right: wordRect.right - containerRect.left,
-          top: wordRect.top - containerRect.top,
-          bottom: wordRect.bottom - containerRect.top,
-        };
-
-        const relativeBall = {
-          left: ballRect.left - containerRect.left,
-          right: ballRect.right - containerRect.left,
-          top: ballRect.top - containerRect.top,
-          bottom: ballRect.bottom - containerRect.top,
-        };
-
-        const collision = !(
-          relativeWord.right < relativeBall.left ||
-          relativeWord.left > relativeBall.right ||
-          relativeWord.bottom < relativeBall.top ||
-          relativeWord.top > relativeBall.bottom
-        );
-
-        if (collision) {
-          const centerX = (relativeBall.left + relativeBall.right) / 2;
-          const wordCenterX = (relativeWord.left + relativeWord.right) / 2;
-          const pushRight = wordCenterX < centerX;
-
-          const moveX = pushRight ? -50 : 50;
-          const moveY = relativeWord.top < relativeBall.top ? -30 : 30;
-
-          wordEl.style.transform = `translate(${moveX}px, ${moveY}px)`;
-        } else {
-          if (
-            !balls.some((ball) => {
-              const otherBallRect = ball.element.getBoundingClientRect();
-              const overlap = !(
-                wordRect.right < otherBallRect.left ||
-                wordRect.left > otherBallRect.right ||
-                wordRect.bottom < otherBallRect.top ||
-                wordRect.top > otherBallRect.bottom
-              );
-              return overlap;
-            })
-          ) {
-            wordEl.style.transform = "";
-          }
         }
       }
 
@@ -594,6 +537,11 @@ document.addEventListener("DOMContentLoaded", () => {
           e.target.closest(".contact-item")
         ) {
           return;
+        }
+
+        // Turn container dark on first click
+        if (!container.classList.contains("dark-mode")) {
+          container.classList.add("dark-mode");
         }
 
         const rect = container.getBoundingClientRect();
